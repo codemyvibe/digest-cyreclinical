@@ -14,68 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   
-  // User routes
-  app.post("/api/users/signup", async (req: Request, res: Response) => {
-    try {
-      const userInput = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(userInput.email);
-      if (existingUser) {
-        return res.status(409).json({ message: "User with this email already exists" });
-      }
-      
-      // Generate verification token
-      const verificationToken = crypto.randomBytes(32).toString("hex");
-      
-      // Create user
-      const user = await storage.createUser({
-        ...userInput,
-        verificationToken
-      });
-      
-      // Send verification email
-      const verificationUrl = `${req.protocol}://${req.get("host")}/verify?token=${verificationToken}`;
-      await emailService.sendVerificationEmail(user.email, user.name, verificationUrl);
-      
-      // Also send initial news digest
-      const latestNews = await storage.getLatestNewsItems(3);
-      if (latestNews.length > 0) {
-        await emailService.sendWelcomeDigest(user.email, user.name, latestNews, verificationUrl);
-      }
-      
-      return res.status(201).json({ message: "User created successfully" });
-    } catch (error) {
-      console.error("Error creating user:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
-      }
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-  
-  app.post("/api/users/verify", async (req: Request, res: Response) => {
-    try {
-      const { token } = req.body;
-      
-      if (!token) {
-        return res.status(400).json({ message: "Verification token is required" });
-      }
-      
-      const user = await storage.getUserByVerificationToken(token);
-      if (!user) {
-        return res.status(404).json({ message: "Invalid verification token" });
-      }
-      
-      // Update user verification status
-      await storage.updateUserVerification(user.id, true);
-      
-      return res.status(200).json({ message: "Email verified successfully" });
-    } catch (error) {
-      console.error("Error verifying user:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
+  // User routes are now handled in auth.ts
   
   // News routes
   app.get("/api/news/latest", async (req: Request, res: Response) => {

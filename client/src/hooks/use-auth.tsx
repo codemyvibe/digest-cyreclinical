@@ -12,21 +12,28 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  requestMagicLinkMutation: UseMutationResult<void, Error, RequestMagicLinkData>;
+  verifyMagicLinkMutation: UseMutationResult<SelectUser, Error, VerifyMagicLinkData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
+  registerMutation: UseMutationResult<void, Error, RegisterData>;
+  verifyEmailMutation: UseMutationResult<SelectUser, Error, VerifyEmailData>;
 };
 
-type LoginData = {
-  username: string;
-  password: string;
+type RequestMagicLinkData = {
+  email: string;
+};
+
+type VerifyMagicLinkData = {
+  token: string;
+};
+
+type VerifyEmailData = {
+  token: string;
 };
 
 type RegisterData = {
-  username: string;
   name: string;
   email: string;
-  password: string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
