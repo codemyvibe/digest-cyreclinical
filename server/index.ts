@@ -37,6 +37,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize database and seed default data
+  try {
+    const { storage } = await import("./storage");
+    log("Initializing database and seeding default data...");
+    await storage.initializeDefaultData();
+    log("Database initialization completed successfully");
+  } catch (error) {
+    log(`Database initialization error: ${error.message}`);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
