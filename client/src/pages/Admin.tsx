@@ -310,15 +310,18 @@ export default function Admin() {
                     <div className="space-y-4">
                       {newsItems.map((item) => (
                         <div key={item.id} className="p-4 border border-gray-200 rounded-lg">
-                          <div className="flex items-center mb-2">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded mr-2 ${
-                              item.category.includes('PHASE') ? 'bg-[#9B59B6]/10 text-[#9B59B6]' :
-                              item.category === 'FDA APPROVAL' ? 'bg-[#3498DB]/10 text-[#3498DB]' :
-                              item.category === 'CLINICAL TRIALS' ? 'bg-[#1ABC9C]/10 text-[#1ABC9C]' :
-                              'bg-[#2C3E50]/10 text-[#2C3E50]'
-                            }`}>
-                              {item.category}
-                            </span>
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            {item.category.split('|').map((cat, index) => (
+                              <span key={index} className={`text-xs font-semibold px-2 py-1 rounded ${
+                                cat.includes('PHASE') ? 'bg-[#9B59B6]/10 text-[#9B59B6]' :
+                                cat === 'FDA APPROVAL' ? 'bg-[#3498DB]/10 text-[#3498DB]' :
+                                cat === 'CLINICAL TRIALS' ? 'bg-[#1ABC9C]/10 text-[#1ABC9C]' :
+                                cat === 'M&A' ? 'bg-[#E67E22]/10 text-[#E67E22]' :
+                                'bg-[#2C3E50]/10 text-[#2C3E50]'
+                              }`}>
+                                {cat.trim()}
+                              </span>
+                            ))}
                             <span className="text-xs text-gray-500">{formatDate(new Date(item.publishedAt))}</span>
                           </div>
                           <h3 className="font-heading font-medium text-lg text-[#2C3E50] mb-2">{item.title.replace(/<[^>]*>/g, '')}</h3>

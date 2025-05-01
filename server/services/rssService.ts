@@ -357,6 +357,7 @@ class RssService {
   private determineCategory(item: RawNewsItem): string {
     const content = (item.title + ' ' + item.content).toLowerCase();
     const categories = item.categories ? item.categories.join(' ').toLowerCase() : '';
+    const newsCategories: string[] = [];
     
     // Check for FDA approvals
     if (
@@ -366,7 +367,7 @@ class RssService {
       categories.includes('approval') || 
       categories.includes('fda')
     ) {
-      return 'FDA APPROVAL';
+      newsCategories.push('FDA APPROVAL');
     }
     
     // Check for clinical trials
@@ -383,9 +384,10 @@ class RssService {
     ) {
       const phaseMatch = content.match(/phase\s+([1-3i]{1,3})/i);
       if (phaseMatch) {
-        return `PHASE ${phaseMatch[1].toUpperCase()} TRIAL`;
+        newsCategories.push(`PHASE ${phaseMatch[1].toUpperCase()} TRIAL`);
+      } else {
+        newsCategories.push('CLINICAL TRIALS');
       }
-      return 'CLINICAL TRIALS';
     }
     
     // Check for M&A
@@ -399,11 +401,16 @@ class RssService {
       categories.includes('m&a') || 
       categories.includes('acquisition')
     ) {
-      return 'M&A';
+      newsCategories.push('M&A');
     }
     
-    // Default category
-    return 'INDUSTRY NEWS';
+    // Add default category if no others match
+    if (newsCategories.length === 0) {
+      return 'INDUSTRY NEWS';
+    }
+    
+    // Join multiple categories with pipe separator
+    return newsCategories.join(' | ');
   }
 }
 
