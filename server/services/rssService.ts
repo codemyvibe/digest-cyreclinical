@@ -37,19 +37,46 @@ class RssService {
     try {
       console.log(`Fetching feed: ${feed.name} (${feed.url})`);
       
-      // Fetch the RSS feed
-      const response = await fetch(feed.url);
+      // Define fetch options with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      // Fetch the RSS feed with a specific user agent
+      const response = await fetch(feed.url, { 
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'BioNews/1.0 RSS Reader (bionews@example.com)'
+        }
+      });
+      
+      // Clear the timeout
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const xml = await response.text();
+      
+      if (!xml || xml.trim().length === 0) {
+        console.log(`Feed returned empty content: ${feed.url}`);
+        return [];
+      }
+      
       const items = this.parseRssXml(xml);
       
       console.log(`Parsed ${items.length} items from ${feed.name}`);
       
       // Convert raw items to InsertNewsItem format
-      return items.map(item => this.formatNewsItem(item));
+      const newsItems = items.map(item => this.formatNewsItem(item));
+      
+      // Update the feed's lastFetched timestamp
+      if (feed.id) {
+        const now = new Date();
+        feed.lastFetched = now;
+      }
+      
+      return newsItems;
     } catch (error) {
       console.error(`Error fetching feed ${feed.url}:`, error);
       return [];
@@ -60,50 +87,179 @@ class RssService {
    * Parse RSS XML content into structured data
    */
   private parseRssXml(xml: string): RawNewsItem[] {
-    // Use xml2js library since we're in Node environment
-    const { parseString } = require('xml2js');
+    // Using a more flexible regex approach that handles CDATA and various feed formats
     const items: RawNewsItem[] = [];
     
     try {
-      let parsedXml: any;
+      // Try to detect feed type (RSS or Atom)
+      const isAtomFeed = xml.includes('<feed') && xml.includes('xmlns="http://www.w3.org/2005/Atom"');
       
-      // Synchronously parse the XML using parseString
-      parseString(xml, (err: any, result: any) => {
-        if (err) {
-          console.error("Error parsing XML:", err);
-          return;
-        }
-        parsedXml = result;
-      });
-      
-      if (!parsedXml || !parsedXml.rss || !parsedXml.rss.channel || !parsedXml.rss.channel[0].item) {
-        console.log("XML doesn't have the expected RSS structure");
-        return items;
+      if (isAtomFeed) {
+        return this.parseAtomXml(xml);
       }
       
-      // Extract items from the parsed XML structure
-      const xmlItems = parsedXml.rss.channel[0].item;
+      // First try finding standard RSS items
+      let itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g;
+      let itemMatches = Array.from(xml.matchAll(itemRegex));
       
-      for (const xmlItem of xmlItems) {
-        const title = this.getXmlValue(xmlItem, 'title');
-        const link = this.getXmlValue(xmlItem, 'link');
-        const content = this.getXmlValue(xmlItem, 'content:encoded') || 
-                       this.getXmlValue(xmlItem, 'description');
-        const pubDate = this.getXmlValue(xmlItem, 'pubDate');
+      // If no items found, try alternative item formats
+      if (itemMatches.length === 0) {
+        itemRegex = /<entry[^>]*>([\s\S]*?)<\/entry>/g;
+        itemMatches = Array.from(xml.matchAll(itemRegex));
+      }
+      
+      // Define regex patterns for various RSS elements, handling CDATA sections
+      const titleRegex = /<title[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/title>/;
+      const linkRegex = /<link[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/link>/;
+      const linkHrefRegex = /<link[^>]*href=['"]([^'"]+)['"]/;
+      const descRegex = /<description[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/description>/;
+      const contentRegex = /<content:encoded[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/content:encoded>/;
+      const contentAltRegex = /<content[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/content>/;
+      const pubDateRegex = /<pubDate[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/pubDate>/;
+      const dateRegex = /<date[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/date>/;
+      const categoryRegex = /<category[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/category>/g;
+      
+      // Process each item
+      for (const itemMatch of itemMatches) {
+        const itemContent = itemMatch[1];
         
-        // Parse categories if available
-        const categories: string[] = [];
-        if (xmlItem.category) {
-          for (const category of xmlItem.category) {
-            if (typeof category === 'string') {
-              categories.push(category);
-            } else if (category && category._) {
-              categories.push(category._);
-            }
+        // Extract item fields with CDATA handling
+        const extractValue = (regex: RegExp, content: string): string => {
+          const match = content.match(regex);
+          if (!match) return '';
+          
+          // If we have a CDATA capture group
+          if (match[2]) return match[2].trim();
+          // Otherwise use the whole content
+          return match[1].trim();
+        };
+        
+        // Try different approaches to get link (simple tag or href attribute)
+        let link = extractValue(linkRegex, itemContent);
+        if (!link) {
+          const hrefMatch = itemContent.match(linkHrefRegex);
+          if (hrefMatch && hrefMatch[1]) {
+            link = hrefMatch[1].trim();
           }
         }
         
-        if (title && link && content && pubDate) {
+        const title = extractValue(titleRegex, itemContent);
+        const description = extractValue(descRegex, itemContent);
+        
+        // Try different content formats
+        let content = extractValue(contentRegex, itemContent);
+        if (!content) {
+          content = extractValue(contentAltRegex, itemContent);
+        }
+        if (!content) {
+          content = description; // Fallback to description if no content
+        }
+        
+        // Try different date formats
+        let pubDate = extractValue(pubDateRegex, itemContent);
+        if (!pubDate) {
+          pubDate = extractValue(dateRegex, itemContent);
+        }
+        
+        // Extract categories
+        const categories: string[] = [];
+        const categoryMatches = Array.from(itemContent.matchAll(categoryRegex));
+        for (const catMatch of categoryMatches) {
+          if (catMatch[1]) {
+            categories.push(catMatch[1].trim());
+          } else if (catMatch[2]) {
+            categories.push(catMatch[2].trim());
+          }
+        }
+        
+        // Only add items with sufficient data
+        if (title && link && pubDate) {
+          items.push({
+            title,
+            link,
+            content: content || description || '',
+            pubDate,
+            categories: categories.length > 0 ? categories : undefined
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing RSS XML:", error);
+    }
+    
+    return items;
+  }
+  
+  /**
+   * Parse Atom XML format
+   */
+  private parseAtomXml(xml: string): RawNewsItem[] {
+    const items: RawNewsItem[] = [];
+    
+    try {
+      // Regex for Atom entries
+      const entryRegex = /<entry[^>]*>([\s\S]*?)<\/entry>/g;
+      const titleRegex = /<title[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/title>/;
+      const linkRegex = /<link[^>]*href=['"]([\s\S]*?)['"][^>]*>/;
+      const contentRegex = /<content[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/content>/;
+      const summaryRegex = /<summary[^>]*>((?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?)<\/summary>/;
+      const updatedRegex = /<updated[^>]*>([\s\S]*?)<\/updated>/;
+      const publishedRegex = /<published[^>]*>([\s\S]*?)<\/published>/;
+      const categoryRegex = /<category[^>]*term=['"]([\s\S]*?)['"][^>]*>/g;
+      
+      const entryMatches = Array.from(xml.matchAll(entryRegex));
+      
+      for (const entryMatch of entryMatches) {
+        const entryContent = entryMatch[1];
+        
+        // Extract values with potential CDATA sections
+        const extractValue = (regex: RegExp, content: string): string => {
+          const match = content.match(regex);
+          if (!match) return '';
+          
+          // If we have a CDATA capture group
+          if (match[2]) return match[2].trim();
+          // Otherwise use the whole content
+          return match[1] ? match[1].trim() : '';
+        };
+        
+        const title = extractValue(titleRegex, entryContent);
+        
+        // Extract link (Atom often uses href attribute)
+        let link = '';
+        const linkMatch = entryContent.match(linkRegex);
+        if (linkMatch && linkMatch[1]) {
+          link = linkMatch[1].trim();
+        }
+        
+        // Try content or summary
+        let content = extractValue(contentRegex, entryContent);
+        if (!content) {
+          content = extractValue(summaryRegex, entryContent) || '';
+        }
+        
+        // Try published or updated date
+        let pubDate = '';
+        const publishedMatch = entryContent.match(publishedRegex);
+        if (publishedMatch && publishedMatch[1]) {
+          pubDate = publishedMatch[1].trim();
+        } else {
+          const updatedMatch = entryContent.match(updatedRegex);
+          if (updatedMatch && updatedMatch[1]) {
+            pubDate = updatedMatch[1].trim();
+          }
+        }
+        
+        // Extract categories from term attribute
+        const categories: string[] = [];
+        const categoryMatches = Array.from(entryContent.matchAll(categoryRegex));
+        for (const catMatch of categoryMatches) {
+          if (catMatch[1]) {
+            categories.push(catMatch[1].trim());
+          }
+        }
+        
+        if (title && link && pubDate) {
           items.push({
             title,
             link,
@@ -114,7 +270,7 @@ class RssService {
         }
       }
     } catch (error) {
-      console.error("Error parsing RSS XML:", error);
+      console.error("Error parsing Atom XML:", error);
     }
     
     return items;

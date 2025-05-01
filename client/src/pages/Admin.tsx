@@ -164,7 +164,17 @@ export default function Admin() {
   
   return (
     <div className="flex flex-col min-h-screen">
-      <BioNewsHeader />
+      <header className="border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <Link href="/" className="flex items-center space-x-2">
+              <i className="ri-flask-line text-[#1ABC9C] text-2xl"></i>
+              <h1 className="text-[#2C3E50] font-heading font-bold text-xl">BioNews Digest</h1>
+            </Link>
+            <Link href="/news" className="text-[#1DA1F2] hover:underline">View News</Link>
+          </div>
+        </div>
+      </header>
       
       <main className="flex-grow bg-[#ECF0F1] py-12">
         <div className="container mx-auto px-4">
@@ -516,7 +526,21 @@ export default function Admin() {
         </div>
       </main>
       
-      <BioNewsFooter />
+      <footer className="py-6 px-4 border-t">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <i className="ri-flask-line text-gray-400 text-lg"></i>
+              <p className="text-gray-500 text-sm">© {new Date().getFullYear()} BioNews Digest</p>
+            </div>
+            <div className="text-sm text-gray-500">
+              <Link href="/news" className="hover:text-[#1DA1F2] mr-4">News</Link>
+              <Link href="/admin" className="hover:text-[#1DA1F2] mr-4">Admin</Link>
+              <Link href="/" className="hover:text-[#1DA1F2]">Home</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

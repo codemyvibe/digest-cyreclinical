@@ -55,23 +55,60 @@ export class MemStorage implements IStorage {
     this.rssFeedIdCounter = 1;
     this.emailDigestIdCounter = 1;
     
-    // Add some default RSS feeds
+    // Add some default RSS feeds with working URLs
     this.createRssFeed({
-      name: "Science Daily Biotech",
-      url: "https://www.sciencedaily.com/rss/health_medicine/biotechnology.xml",
+      name: "Medical News Today",
+      url: "https://www.medicalnewstoday.com/rss-feeds/category/pharmaceutical-industry",
       isActive: true
     });
     
     this.createRssFeed({
-      name: "NIH News",
-      url: "https://www.nih.gov/news-events/news-releases/feed",
+      name: "FDA News Releases",
+      url: "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml",
       isActive: true
     });
     
     this.createRssFeed({
-      name: "Genetic Engineering News",
-      url: "https://www.genengnews.com/feed/",
+      name: "Drug Discovery & Development",
+      url: "https://www.drugdiscoverytrends.com/feed/",
       isActive: true
+    });
+    
+    // Add some sample news items
+    this.createNewsItem({
+      title: "FDA Approves New Cancer Treatment for Rare Blood Disorders",
+      summary: "The FDA has approved a groundbreaking therapy for patients with rare blood cancers. This first-in-class treatment showed a 65% response rate in clinical trials and is expected to significantly improve patient outcomes. The approval marks a major milestone for targeted cancer therapies.",
+      sourceUrl: "https://www.fda.gov/news-events/press-announcements",
+      publishedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // yesterday
+      category: "FDA APPROVAL",
+      importance: 85
+    });
+    
+    this.createNewsItem({
+      title: "Phase 3 Trial Shows Promising Results for Alzheimer's Drug",
+      summary: "A major pharmaceutical company has announced positive results from their Phase 3 clinical trial for a novel Alzheimer's treatment. The drug demonstrated statistically significant improvements in cognitive decline compared to placebo, potentially offering new hope for millions of patients worldwide.",
+      sourceUrl: "https://www.clinicaltrials.gov",
+      publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      category: "CLINICAL TRIAL",
+      importance: 75
+    });
+    
+    this.createNewsItem({
+      title: "Major Biotech Acquisition: Company X Acquires Gene Therapy Startup for $2.4 Billion",
+      summary: "In one of the largest biotech acquisitions this year, Company X has announced the purchase of a leading gene therapy startup for $2.4 billion. The deal is expected to accelerate development of several promising therapies currently in early-stage trials and strengthen Company X's position in the gene therapy market.",
+      sourceUrl: "https://www.biopharmadive.com",
+      publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+      category: "M&A",
+      importance: 80
+    });
+    
+    this.createNewsItem({
+      title: "New Research Shows Promising Results for mRNA-based Vaccines Against Infectious Diseases",
+      summary: "A recent study published in a leading medical journal demonstrates the potential of mRNA technology beyond COVID-19. The research showed that mRNA platforms could be quickly adapted to target multiple infectious diseases with high efficacy and safety profiles.",
+      sourceUrl: "https://www.nature.com/articles",
+      publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      category: "INDUSTRY NEWS",
+      importance: 65
     });
   }
 
