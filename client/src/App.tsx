@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import Success from "@/pages/Success";
 import Verify from "@/pages/Verify";
 import Admin from "@/pages/Admin";
+import News from "@/pages/News";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/success" component={Success} />
       <Route path="/verify" component={Verify} />
+      <Route path="/news" component={News} />
       <Route path="/admin" component={Admin} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />

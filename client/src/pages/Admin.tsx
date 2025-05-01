@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { BioNewsHeader } from '@/components/BioNewsHeader';
-import { BioNewsFooter } from '@/components/BioNewsFooter';
+import { Link } from 'wouter';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
@@ -21,6 +20,7 @@ interface NewsItem {
   sourceUrl: string;
   publishedAt: string;
   category: string;
+  importance: number;
 }
 
 interface FeedSource {
@@ -28,10 +28,18 @@ interface FeedSource {
   name: string;
   url: string;
   isActive: boolean;
+  lastFetched: string | null;
+}
+
+interface EmailDigest {
+  id: number;
+  subject: string;
+  sentTo: number;
+  sentAt: string;
 }
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('news');
   const { toast } = useToast();
   
   // Users
@@ -49,18 +57,24 @@ export default function Admin() {
     queryKey: ['/api/admin/feeds'],
   });
   
+  // Email Digests
+  const { data: emailDigests, isLoading: digestsLoading } = useQuery<EmailDigest[]>({
+    queryKey: ['/api/admin/digests'],
+  });
+  
   // Send digest mutation
   const sendDigestMutation = useMutation({
     mutationFn: async () => {
       return apiRequest('POST', '/api/admin/send-digest', {});
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/digests'] });
       toast({
         title: "Success",
         description: "Digest sent successfully to all verified users."
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to send digest.",

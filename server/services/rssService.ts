@@ -60,48 +60,80 @@ class RssService {
    * Parse RSS XML content into structured data
    */
   private parseRssXml(xml: string): RawNewsItem[] {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xml, "text/xml");
-    
+    // Use xml2js library since we're in Node environment
+    const { parseString } = require('xml2js');
     const items: RawNewsItem[] = [];
-    const itemElements = xmlDoc.getElementsByTagName("item");
     
-    for (let i = 0; i < itemElements.length; i++) {
-      const item = itemElements[i];
+    try {
+      let parsedXml: any;
       
-      const title = this.getElementText(item, "title");
-      const link = this.getElementText(item, "link");
-      const content = this.getElementText(item, "content:encoded") || 
-                      this.getElementText(item, "description");
-      const pubDate = this.getElementText(item, "pubDate");
+      // Synchronously parse the XML using parseString
+      parseString(xml, (err: any, result: any) => {
+        if (err) {
+          console.error("Error parsing XML:", err);
+          return;
+        }
+        parsedXml = result;
+      });
       
-      // Parse categories if available
-      const categoryElements = item.getElementsByTagName("category");
-      const categories: string[] = [];
-      for (let j = 0; j < categoryElements.length; j++) {
-        categories.push(categoryElements[j].textContent || "");
+      if (!parsedXml || !parsedXml.rss || !parsedXml.rss.channel || !parsedXml.rss.channel[0].item) {
+        console.log("XML doesn't have the expected RSS structure");
+        return items;
       }
       
-      if (title && link && content && pubDate) {
-        items.push({
-          title,
-          link,
-          content,
-          pubDate,
-          categories: categories.length > 0 ? categories : undefined
-        });
+      // Extract items from the parsed XML structure
+      const xmlItems = parsedXml.rss.channel[0].item;
+      
+      for (const xmlItem of xmlItems) {
+        const title = this.getXmlValue(xmlItem, 'title');
+        const link = this.getXmlValue(xmlItem, 'link');
+        const content = this.getXmlValue(xmlItem, 'content:encoded') || 
+                       this.getXmlValue(xmlItem, 'description');
+        const pubDate = this.getXmlValue(xmlItem, 'pubDate');
+        
+        // Parse categories if available
+        const categories: string[] = [];
+        if (xmlItem.category) {
+          for (const category of xmlItem.category) {
+            if (typeof category === 'string') {
+              categories.push(category);
+            } else if (category && category._) {
+              categories.push(category._);
+            }
+          }
+        }
+        
+        if (title && link && content && pubDate) {
+          items.push({
+            title,
+            link,
+            content,
+            pubDate,
+            categories: categories.length > 0 ? categories : undefined
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error parsing RSS XML:", error);
     }
     
     return items;
   }
   
   /**
-   * Helper to get text content from an XML element
+   * Helper to safely get a value from XML object
    */
-  private getElementText(parent: Element, tagName: string): string {
-    const element = parent.getElementsByTagName(tagName)[0];
-    return element ? element.textContent || "" : "";
+  private getXmlValue(obj: any, key: string): string {
+    if (!obj || !obj[key]) return '';
+    
+    const value = obj[key][0];
+    if (typeof value === 'string') {
+      return value;
+    } else if (value && value._) {
+      return value._;
+    }
+    
+    return '';
   }
   
   /**

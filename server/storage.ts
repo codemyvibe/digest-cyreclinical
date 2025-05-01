@@ -57,20 +57,20 @@ export class MemStorage implements IStorage {
     
     // Add some default RSS feeds
     this.createRssFeed({
-      name: "FierceBiotech",
-      url: "https://www.fiercebiotech.com/rss/xml",
+      name: "Science Daily Biotech",
+      url: "https://www.sciencedaily.com/rss/health_medicine/biotechnology.xml",
       isActive: true
     });
     
     this.createRssFeed({
-      name: "BioSpace",
-      url: "https://www.biospace.com/rss/news/all/",
+      name: "NIH News",
+      url: "https://www.nih.gov/news-events/news-releases/feed",
       isActive: true
     });
     
     this.createRssFeed({
-      name: "BioPharma Dive",
-      url: "https://www.biopharmadive.com/feeds/news/",
+      name: "Genetic Engineering News",
+      url: "https://www.genengnews.com/feed/",
       isActive: true
     });
   }
