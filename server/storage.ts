@@ -6,19 +6,23 @@ import {
 } from "@shared/schema";
 
 import { db } from "./db";
-import { eq, desc, and, asc, SQL, sql } from "drizzle-orm";
+import { eq, desc, and, asc, SQL, sql, isNull, lt, gt } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import crypto from "crypto";
 
 // Interface for Storage operations
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
+  getUserByMagicLinkToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser & { verificationToken?: string }): Promise<User>;
   updateUserVerification(id: number, isVerified: boolean): Promise<User | undefined>;
+  createMagicLink(email: string): Promise<{token: string, user: User} | undefined>;
+  validateMagicLink(token: string): Promise<User | undefined>;
+  updateUserLastLogin(id: number): Promise<User | undefined>;
   getVerifiedUsers(): Promise<User[]>;
   
   // News items operations
@@ -66,12 +70,75 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByMagicLinkToken(token: string): Promise<User | undefined> {
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(sql`LOWER(${users.username})`, username.toLowerCase()));
+      .where(
+        and(
+          eq(users.magicLinkToken, token),
+          gt(users.magicLinkExpiry as any, new Date()) // Type cast needed since this could be null
+        )
+      );
     return user;
+  }
+  
+  async createMagicLink(email: string): Promise<{token: string, user: User} | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return undefined;
+    
+    // Generate a random token
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Set expiry for 30 minutes from now
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + 30);
+    
+    // Update the user with the new magic link token and expiry
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        magicLinkToken: token,
+        magicLinkExpiry: expiry
+      })
+      .where(eq(users.id, user.id))
+      .returning();
+    
+    return {
+      token,
+      user: updatedUser
+    };
+  }
+  
+  async validateMagicLink(token: string): Promise<User | undefined> {
+    const user = await this.getUserByMagicLinkToken(token);
+    if (!user) return undefined;
+    
+    // Invalidate the token to prevent reuse
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        magicLinkToken: null,
+        magicLinkExpiry: null,
+        lastLoginAt: new Date(),
+        isVerified: true // Verify the user when they use a magic link
+      })
+      .where(eq(users.id, user.id))
+      .returning();
+    
+    return updatedUser;
+  }
+  
+  async updateUserLastLogin(id: number): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        lastLoginAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return updatedUser;
   }
 
   async getUserByVerificationToken(token: string): Promise<User | undefined> {

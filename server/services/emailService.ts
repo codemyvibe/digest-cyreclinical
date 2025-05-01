@@ -116,7 +116,7 @@ class EmailService {
           html: emailContent,
         });
         console.log(`Magic link email sent to ${email}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error sending magic link email:', error);
         if (error.response) {
           console.error(error.response.body);
@@ -233,7 +233,7 @@ class EmailService {
           html: emailContent,
         });
         console.log(`Verification email sent to ${email}`);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error sending verification email:', error);
         if (error.response) {
           console.error(error.response.body);
@@ -433,7 +433,6 @@ class EmailService {
       </div>
     `).join('');
     
-    // In a real application, this would use an actual email service like Resend
     const emailContent = `
       <!DOCTYPE html>
       <html>
@@ -510,11 +509,26 @@ class EmailService {
       </html>
     `;
     
-    console.log("Digest email content HTML format (truncated):");
-    console.log(emailContent.substring(0, 500) + "...");
-    
-    // Simulate API call
-    return Promise.resolve();
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        await sgMail.send({
+          to: email,
+          from: 'news@bionewsdigest.com',
+          subject: `Your BioNews Digest for ${formatDate(new Date())}`,
+          html: emailContent,
+        });
+        console.log(`News digest email sent to ${email}`);
+      } catch (error: any) {
+        console.error('Error sending news digest email:', error);
+        if (error.response) {
+          console.error(error.response.body);
+        }
+        throw new Error('Failed to send news digest email');
+      }
+    } else {
+      console.log("Email content (news digest):");
+      console.log(emailContent.substring(0, 500) + "...");
+    }
   }
 }
 

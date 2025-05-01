@@ -1,32 +1,15 @@
 import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import { randomBytes } from "crypto";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import MemoryStore from "memorystore";
+import { emailService } from "./services/emailService";
 
 declare global {
   namespace Express {
     interface User extends SelectUser {}
   }
-}
-
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
 export function setupAuth(app: Express) {
@@ -46,21 +29,6 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password || ''))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
-        }
-      } catch (error) {
-        return done(error as Error);
-      }
-    }),
-  );
-
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
@@ -71,36 +39,181 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
+  // Create a new user account
+  app.post("/api/users/signup", async (req: Request, res: Response) => {
+    try {
+      const { email, name } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      
+      // Generate verification token
+      const verificationToken = randomBytes(32).toString('hex');
+      
+      // Create new user
+      const user = await storage.createUser({
+        email,
+        name,
+        verificationToken
+      });
+      
+      // Generate verification URL
+      const verificationUrl = `${req.protocol}://${req.get('host')}/verify/${verificationToken}`;
+      
+      // Send verification email
+      await emailService.sendVerificationEmail(
+        email,
+        name,
+        verificationUrl
+      );
+      
+      // Send welcome digest with sample news
+      const latestNews = await storage.getLatestNewsItems(3);
+      if (latestNews.length > 0) {
+        await emailService.sendWelcomeDigest(
+          email,
+          name,
+          latestNews,
+          verificationUrl
+        );
+      }
+      
+      res.status(201).json({ 
+        message: "User created successfully. Please check your email to verify your account.",
+        userId: user.id
+      });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Error creating user: " + error.message });
     }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  // Verify a user's email address
+  app.post("/api/users/verify", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+      
+      const user = await storage.getUserByVerificationToken(token);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Invalid or expired verification token" });
+      }
+      
+      // Update user as verified and clear verification token
+      const updatedUser = await storage.updateUserVerification(user.id, true);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Error verifying user" });
+      }
+      
+      // Log the user in
+      req.login(updatedUser, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Error logging in after verification" });
+        }
+        
+        return res.status(200).json({ 
+          message: "Email verified successfully",
+          user: updatedUser
+        });
+      });
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      res.status(500).json({ message: "Error verifying email: " + error.message });
+    }
   });
 
-  app.post("/api/logout", (req, res, next) => {
+  // Request a magic login link
+  app.post("/api/auth/magic-link", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Create magic link
+      const result = await storage.createMagicLink(email);
+      
+      if (!result) {
+        // Don't reveal that the user doesn't exist for security reasons
+        return res.status(200).json({ message: "If your email exists in our system, you will receive a magic link to sign in" });
+      }
+      
+      const { token, user } = result;
+      
+      // Generate magic link URL
+      const magicLinkUrl = `${req.protocol}://${req.get('host')}/auth/login/${token}`;
+      
+      // Send magic link email
+      await emailService.sendMagicLink(
+        user.email,
+        user.name,
+        magicLinkUrl
+      );
+      
+      res.status(200).json({ message: "If your email exists in our system, you will receive a magic link to sign in" });
+    } catch (error: any) {
+      console.error("Magic link error:", error);
+      // Don't reveal if there was an actual error for security reasons
+      res.status(200).json({ message: "If your email exists in our system, you will receive a magic link to sign in" });
+    }
+  });
+
+  // Validate a magic link and log the user in
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Login token is required" });
+      }
+      
+      // Validate magic link and get user
+      const user = await storage.validateMagicLink(token);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid or expired login link" });
+      }
+      
+      // Log the user in
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Error logging in" });
+        }
+        
+        return res.status(200).json({ 
+          message: "Logged in successfully",
+          user
+        });
+      });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Error logging in: " + error.message });
+    }
+  });
+
+  // Logout
+  app.post("/api/auth/logout", (req: Request, res: Response, next: NextFunction) => {
     req.logout((err) => {
       if (err) return next(err);
-      res.sendStatus(200);
+      res.status(200).json({ message: "Logged out successfully" });
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+  // Get current authenticated user
+  app.get("/api/auth/user", (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    res.status(200).json(req.user);
   });
 }
