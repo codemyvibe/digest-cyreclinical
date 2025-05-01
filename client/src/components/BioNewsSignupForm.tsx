@@ -8,9 +8,6 @@ import { z } from 'zod';
 import { insertUserSchema } from '@shared/schema';
 import { useLocation } from 'wouter';
 
-// Add type declaration for module
-declare module '@hookform/resolvers/zod';
-
 // Extend the schema with client-side validation rules
 const signupFormSchema = insertUserSchema.extend({
   termsAccepted: z.boolean().refine(val => val === true, {
@@ -107,9 +104,21 @@ export function BioNewsSignupForm() {
           )}
         </div>
         
-        <div className="text-xs text-gray-500 mt-1">
-          By clicking "Next", you agree to BioNews Digest's and its affiliates' <a href="#" className="text-blue-500">Terms of Service</a> and <a href="#" className="text-blue-500">Privacy Policy</a>.
+        <div className="flex items-start space-x-2 mt-4">
+          <input
+            type="checkbox"
+            id="termsAccepted"
+            className="rounded border-gray-300 text-blue-500 mt-1"
+            {...form.register('termsAccepted')}
+            disabled={isSubmitting}
+          />
+          <label htmlFor="termsAccepted" className="text-sm text-gray-600">
+            I agree to receive the BioNews Digest newsletter and accept the <a href="#" className="text-blue-500">Terms of Service</a> and <a href="#" className="text-blue-500">Privacy Policy</a>.
+          </label>
         </div>
+        {form.formState.errors.termsAccepted && (
+          <p className="mt-1 text-xs text-red-500">{form.formState.errors.termsAccepted.message}</p>
+        )}
         
         <div className="flex justify-end mt-3">
           <button 
@@ -125,7 +134,7 @@ export function BioNewsSignupForm() {
                 </svg>
                 Processing...
               </span>
-            ) : 'Next'}
+            ) : 'Sign Up'}
           </button>
         </div>
       </div>
