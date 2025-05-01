@@ -46,18 +46,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<SelectUser | null, Error>({
-    queryKey: ["/api/user"],
+    queryKey: ["/api/auth/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      const data = await res.json();
-      return data;
+  // Request a magic link for login
+  const requestMagicLinkMutation = useMutation({
+    mutationFn: async (data: RequestMagicLinkData) => {
+      await apiRequest("POST", "/api/auth/magic-link", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Magic link sent",
+        description: "Check your email for a login link",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send magic link",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Verify a magic link token and login
+  const verifyMagicLinkMutation = useMutation({
+    mutationFn: async (data: VerifyMagicLinkData) => {
+      const res = await apiRequest("POST", "/api/auth/login", data);
+      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["/api/auth/user"], user);
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.name}!`,
@@ -66,23 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid username or password",
+        description: error.message || "Invalid or expired login link",
         variant: "destructive",
       });
     },
   });
 
+  // Register a new user
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
-      const data = await res.json();
-      return data;
+      await apiRequest("POST", "/api/users/signup", userData);
     },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: () => {
       toast({
         title: "Registration successful",
-        description: `Welcome, ${user.name}!`,
+        description: "Please check your email to verify your account",
       });
     },
     onError: (error: Error) => {
@@ -94,21 +112,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Verify email registration
+  const verifyEmailMutation = useMutation({
+    mutationFn: async (data: VerifyEmailData) => {
+      const res = await apiRequest("POST", "/api/users/verify", data);
+      return await res.json();
+    },
+    onSuccess: (data: { user?: SelectUser; message: string }) => {
+      if (data.user) {
+        queryClient.setQueryData(["/api/auth/user"], data.user);
+      }
+      toast({
+        title: "Email verified",
+        description: "Your account has been verified successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Verification failed",
+        description: error.message || "Invalid or expired verification token",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Logout user
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      queryClient.setQueryData(["/api/auth/user"], null);
       toast({
         title: "Logged out",
-        description: "You have been successfully logged out.",
+        description: "You have been successfully logged out",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Logout failed",
-        description: error.message || "Could not log out",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     },
@@ -120,9 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: user || null,
         isLoading,
         error,
-        loginMutation,
+        requestMagicLinkMutation,
+        verifyMagicLinkMutation,
         logoutMutation,
         registerMutation,
+        verifyEmailMutation,
       }}
     >
       {children}
