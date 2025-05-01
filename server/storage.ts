@@ -209,6 +209,72 @@ export class DatabaseStorage implements IStorage {
         url: "https://www.drugdiscoverytrends.com/feed/",
         isActive: true
       });
+
+      await this.createRssFeed({
+        name: "FiercePharma",
+        url: "https://www.fiercepharma.com/rss/xml",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "FierceBiotech",
+        url: "https://www.fiercebiotech.com/rss/biotech/xml",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "FierceHealthcare",
+        url: "https://www.fiercehealthcare.com/rss/xml",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Labiotech.eu",
+        url: "https://labiotech.eu/feed",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Bioengineer.org",
+        url: "https://bioengineer.org/feed",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "BioPharma Dive",
+        url: "https://biopharmadive.com/feeds/news",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "GEN - Genetic Engineering and Biotechnology News",
+        url: "https://feeds.feedburner.com/GenGeneticEngineeringAndBiotechnologyNews",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Endpoints News",
+        url: "https://endpts.com/feed",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Bio.News",
+        url: "https://bio.news/feed",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Decoding Bio",
+        url: "https://decodingbio.substack.com/feed",
+        isActive: true
+      });
+
+      await this.createRssFeed({
+        name: "Nature Biotechnology",
+        url: "https://www.nature.com/subjects/biotechnology.rss",
+        isActive: true
+      });
       
       // Add sample news items if we don't have any
       const existingNews = await this.getNewsItems(1);
