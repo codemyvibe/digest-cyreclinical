@@ -1,5 +1,5 @@
 import { InsertNewsItem } from "@shared/schema";
-import { openaiService } from "./openaiService";
+import { gemmaService } from "./gemmaService";
 
 class SummarizeService {
   /**
@@ -14,8 +14,8 @@ class SummarizeService {
     // First, score and rank all items by importance
     const scoredItems = await Promise.all(
       newsItems.map(async item => {
-        // Use OpenAI to calculate importance if available
-        const importance = await openaiService.calculateImportance(item);
+        // Use Gemma to calculate importance if available
+        const importance = await gemmaService.calculateImportance(item);
         return { ...item, importance };
       })
     );
@@ -29,8 +29,8 @@ class SummarizeService {
     // Generate better summaries for the top items
     const processedItems = await Promise.all(
       topItems.map(async item => {
-        // Use OpenAI to generate summary if available
-        const summary = await openaiService.generateSummary(item);
+        // Use Gemma to generate summary if available
+        const summary = await gemmaService.generateSummary(item);
         return { ...item, summary };
       })
     );
