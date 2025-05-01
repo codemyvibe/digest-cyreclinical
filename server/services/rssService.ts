@@ -318,8 +318,11 @@ class RssService {
       publishedAt = new Date(); // Fallback to current date
     }
     
+    // Sanitize title by removing HTML tags
+    const sanitizedTitle = item.title.replace(/<[^>]*>/g, '');
+    
     return {
-      title: item.title,
+      title: sanitizedTitle,
       summary: this.generateSummary(item.content), // Generate a placeholder summary to be improved by the summarize service
       sourceUrl: item.link,
       originalContent: item.content,

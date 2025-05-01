@@ -320,7 +320,7 @@ export default function Admin() {
                             </span>
                             <span className="text-xs text-gray-500">{formatDate(new Date(item.publishedAt))}</span>
                           </div>
-                          <h3 className="font-heading font-medium text-lg text-[#2C3E50] mb-2">{item.title}</h3>
+                          <h3 className="font-heading font-medium text-lg text-[#2C3E50] mb-2">{item.title.replace(/<[^>]*>/g, '')}</h3>
                           <p className="text-gray-600 mb-3">{item.summary}</p>
                           <a href={item.sourceUrl} className="text-[#3498DB] hover:underline inline-flex items-center text-sm font-medium" target="_blank" rel="noopener noreferrer">
                             View source <i className="ri-external-link-line ml-1"></i>

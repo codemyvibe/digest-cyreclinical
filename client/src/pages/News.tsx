@@ -101,7 +101,7 @@ export default function News() {
                     <span className="text-xs text-gray-500">{formatDate(new Date(item.publishedAt))}</span>
                   </div>
                   
-                  <h3 className="font-medium text-lg mb-2">{item.title}</h3>
+                  <h3 className="font-medium text-lg mb-2">{item.title.replace(/<[^>]*>/g, '')}</h3>
                   <p className="text-gray-600 mb-3 text-sm">{item.summary}</p>
                   
                   <a 
