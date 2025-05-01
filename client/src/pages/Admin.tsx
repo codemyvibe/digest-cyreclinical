@@ -312,8 +312,9 @@ export default function Admin() {
                         <div key={item.id} className="p-4 border border-gray-200 rounded-lg">
                           <div className="flex items-center mb-2">
                             <span className={`text-xs font-semibold px-2 py-1 rounded mr-2 ${
+                              item.category.includes('PHASE') ? 'bg-[#9B59B6]/10 text-[#9B59B6]' :
                               item.category === 'FDA APPROVAL' ? 'bg-[#3498DB]/10 text-[#3498DB]' :
-                              item.category === 'CLINICAL TRIAL' ? 'bg-[#1ABC9C]/10 text-[#1ABC9C]' :
+                              item.category === 'CLINICAL TRIALS' ? 'bg-[#1ABC9C]/10 text-[#1ABC9C]' :
                               'bg-[#2C3E50]/10 text-[#2C3E50]'
                             }`}>
                               {item.category}

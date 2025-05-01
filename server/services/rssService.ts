@@ -381,7 +381,11 @@ class RssService {
       categories.includes('clinical') || 
       categories.includes('trial')
     ) {
-      return 'CLINICAL TRIAL';
+      const phaseMatch = content.match(/phase\s+([1-3i]{1,3})/i);
+      if (phaseMatch) {
+        return `PHASE ${phaseMatch[1].toUpperCase()} TRIAL`;
+      }
+      return 'CLINICAL TRIALS';
     }
     
     // Check for M&A
