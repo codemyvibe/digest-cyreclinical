@@ -7,18 +7,17 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  username: text("username").unique(),
-  password: text("password"),
   isVerified: boolean("is_verified").default(false).notNull(),
   verificationToken: text("verification_token"),
+  magicLinkToken: text("magic_link_token"),
+  magicLinkExpiry: timestamp("magic_link_expiry"),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   email: true,
-  username: true,
-  password: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
