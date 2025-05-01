@@ -8,8 +8,12 @@ import { emailService } from "./services/emailService";
 import { rssService } from "./services/rssService";
 import { summarizeService } from "./services/summarizeService";
 import { startScheduler } from "./services/schedulerService";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
   // User routes
   app.post("/api/users/signup", async (req: Request, res: Response) => {
     try {

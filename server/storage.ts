@@ -44,6 +44,14 @@ export interface IStorage {
 
 // Database-based implementation of the storage interface
 export class DatabaseStorage implements IStorage {
+  sessionStore: any;
+  
+  constructor() {
+    const MemoryStoreSession = MemoryStore(session);
+    this.sessionStore = new MemoryStoreSession({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+  }
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -74,7 +82,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: InsertUser & { verificationToken: string }): Promise<User> {
+  async createUser(user: InsertUser & { verificationToken?: string }): Promise<User> {
     const [newUser] = await db
       .insert(users)
       .values({
