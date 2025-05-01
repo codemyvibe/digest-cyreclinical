@@ -107,6 +107,14 @@ class EmailService {
       </html>
     `;
 
+    // For development/testing purposes, we'll just log the email content
+    // and the magic link URL instead of actually sending the email
+    console.log("Email content (magic link):");
+    console.log(`Magic link URL: ${magicLink}`);
+    console.log(emailContent.substring(0, 500) + "...");
+    
+    // Skip actual sending for now due to SendGrid verified sender requirements
+    /*
     if (process.env.SENDGRID_API_KEY) {
       try {
         await sgMail.send({
@@ -127,6 +135,7 @@ class EmailService {
       console.log("Email content (magic link):");
       console.log(emailContent.substring(0, 500) + "...");
     }
+    */
   }
   /**
    * Send verification email to the user
@@ -224,6 +233,14 @@ class EmailService {
       </html>
     `;
 
+    // For development/testing purposes, we'll just log the email content
+    // and the verification URL instead of actually sending the email
+    console.log("Email content (verification):");
+    console.log(`Verification URL: ${verificationUrl}`);
+    console.log(emailContent.substring(0, 500) + "...");
+    
+    // Skip actual sending for now due to SendGrid verified sender requirements
+    /*
     if (process.env.SENDGRID_API_KEY) {
       try {
         await sgMail.send({
@@ -244,6 +261,7 @@ class EmailService {
       console.log("Email content (verification):");
       console.log(emailContent.substring(0, 500) + "...");
     }
+    */
   }
   
   /**
@@ -377,6 +395,14 @@ class EmailService {
       </html>
     `;
     
+    // For development/testing purposes, we'll just log the email content
+    // and the verification URL instead of actually sending the email
+    console.log("Email content (welcome digest):");
+    console.log(`Verification URL: ${verificationUrl}`);
+    console.log(emailContent.substring(0, 500) + "...");
+    
+    // Skip actual sending for now due to SendGrid verified sender requirements
+    /*
     if (process.env.SENDGRID_API_KEY) {
       try {
         await sgMail.send({
@@ -397,6 +423,7 @@ class EmailService {
       console.log("Email content (welcome digest):");
       console.log(emailContent.substring(0, 500) + "...");
     }
+    */
   }
   
   /**
@@ -509,6 +536,13 @@ class EmailService {
       </html>
     `;
     
+    // For development/testing purposes, we'll just log the email content
+    // instead of actually sending the email
+    console.log("Email content (news digest):");
+    console.log(emailContent.substring(0, 500) + "...");
+    
+    // Skip actual sending for now due to SendGrid verified sender requirements
+    /*
     if (process.env.SENDGRID_API_KEY) {
       try {
         await sgMail.send({
@@ -529,6 +563,7 @@ class EmailService {
       console.log("Email content (news digest):");
       console.log(emailContent.substring(0, 500) + "...");
     }
+    */
   }
 }
 
