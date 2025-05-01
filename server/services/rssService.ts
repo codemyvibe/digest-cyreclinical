@@ -299,8 +299,24 @@ class RssService {
     // Determine category based on content or tags
     const category = this.determineCategory(item);
     
-    // Parse date
-    const publishedAt = new Date(item.pubDate);
+    // Parse date with error handling
+    let publishedAt: Date;
+    try {
+      publishedAt = new Date(item.pubDate);
+      
+      // Check if the date is valid (not Invalid Date)
+      if (isNaN(publishedAt.getTime())) {
+        console.warn(`Invalid date format in RSS item: "${item.pubDate}" for article: "${item.title}". Using current date.`);
+        publishedAt = new Date(); // Fallback to current date
+      }
+      
+      // The publishedAt.toISOString() method is called when storing to PostgreSQL
+      // Let's verify it works to prevent failures during insertion
+      publishedAt.toISOString();
+    } catch (error) {
+      console.warn(`Error processing date: ${error}. Using current date for article: "${item.title}"`);
+      publishedAt = new Date(); // Fallback to current date
+    }
     
     return {
       title: item.title,
