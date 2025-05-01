@@ -9,7 +9,7 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1";
 
 // The model ID for a large language model on OpenRouter 
 // Using Claude 3 Opus as a powerful alternative to Gemma
-const GEMMA_MODEL_ID = "anthropic/claude-3-opus-20240229";
+const AI_MODEL_ID = "anthropic/claude-3-opus-20240229";
 
 class AIService {
   /**
@@ -28,7 +28,7 @@ class AIService {
         ? this.stripHtml(item.originalContent) 
         : item.summary;
       
-      // Prepare the system and user messages for Gemma via OpenRouter
+      // Prepare the system and user messages for AI via OpenRouter
       const messages = [
         {
           role: "system",
@@ -58,7 +58,7 @@ class AIService {
           'X-Title': 'BioNews Digest App' // Title for OpenRouter
         },
         body: JSON.stringify({
-          model: GEMMA_MODEL_ID,
+          model: AI_MODEL_ID,
           messages: messages,
           max_tokens: 150,
           temperature: 0.4
@@ -76,14 +76,14 @@ class AIService {
       console.log(`Generated summary: ${summary.substring(0, 100)}...`);
       return summary;
     } catch (error) {
-      console.error("Error generating summary with Gemma via OpenRouter:", error);
+      console.error("Error generating summary with AI via OpenRouter:", error);
       // Fallback to original summary if API call fails
       return item.summary;
     }
   }
   
   /**
-   * Analyze content and assign importance score using Gemma 3 27B via OpenRouter
+   * Analyze content and assign importance score using advanced AI via OpenRouter
    */
   async calculateImportance(item: InsertNewsItem): Promise<number> {
     // If OpenRouter is not available, use basic scoring logic
@@ -131,7 +131,7 @@ class AIService {
           'X-Title': 'BioNews Digest App'
         },
         body: JSON.stringify({
-          model: GEMMA_MODEL_ID,
+          model: AI_MODEL_ID,
           messages: messages,
           max_tokens: 50,
           temperature: 0.2, // Low temperature for more consistent scoring
@@ -161,7 +161,7 @@ class AIService {
       // Fallback to basic scoring
       return this.calculateBasicImportance(item);
     } catch (error) {
-      console.error("Error calculating importance with Gemma via OpenRouter:", error);
+      console.error("Error calculating importance with AI via OpenRouter:", error);
       return this.calculateBasicImportance(item);
     }
   }
