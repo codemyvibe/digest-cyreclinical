@@ -1,7 +1,133 @@
 import { NewsItem } from "@shared/schema";
 import { formatDate } from "../../client/src/lib/utils";
+import sgMail from '@sendgrid/mail';
 
 class EmailService {
+  constructor() {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.warn("SendGrid API key not found. Email functionality will be limited.");
+    } else {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    }
+  }
+
+  /**
+   * Send a magic link for passwordless login
+   */
+  async sendMagicLink(
+    email: string,
+    name: string,
+    magicLink: string
+  ): Promise<void> {
+    console.log(`Sending magic link to ${email}`);
+    
+    const emailContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sign in to BioNews Digest</title>
+        <style>
+          body {
+            font-family: 'Inter', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2C3E50;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background-color: #2C3E50;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+          }
+          .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+          }
+          .login-button {
+            display: inline-block;
+            background-color: #1ABC9C;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            margin-top: 16px;
+            font-weight: 600;
+          }
+          .content {
+            padding: 20px;
+            background-color: #ffffff;
+          }
+          .footer {
+            padding: 20px;
+            background-color: #ECF0F1;
+            text-align: center;
+            font-size: 12px;
+            color: #7F8C8D;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">
+              <span>BioNews Digest</span>
+            </div>
+            <p>Your personalized biotech & pharma news digest</p>
+          </div>
+          
+          <div class="content">
+            <h2>Hello ${name},</h2>
+            
+            <p>Click the button below to sign in to your BioNews Digest account:</p>
+            
+            <div style="margin-top: 32px; text-align: center;">
+              <a href="${magicLink}" class="login-button">
+                Sign in to BioNews Digest
+              </a>
+            </div>
+            
+            <p style="margin-top: 32px;">This magic link will expire in 30 minutes. If you didn't request this, you can safely ignore this email.</p>
+          </div>
+          
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} BioNews Digest. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        await sgMail.send({
+          to: email,
+          from: 'news@bionewsdigest.com',
+          subject: 'Sign in to BioNews Digest',
+          html: emailContent,
+        });
+        console.log(`Magic link email sent to ${email}`);
+      } catch (error) {
+        console.error('Error sending magic link email:', error);
+        if (error.response) {
+          console.error(error.response.body);
+        }
+        throw new Error('Failed to send magic link email');
+      }
+    } else {
+      console.log("Email content (magic link):");
+      console.log(emailContent.substring(0, 500) + "...");
+    }
+  }
   /**
    * Send verification email to the user
    */
@@ -11,28 +137,113 @@ class EmailService {
     verificationUrl: string
   ): Promise<void> {
     console.log(`Sending verification email to ${email}`);
-    console.log(`Verification URL: ${verificationUrl}`);
     
-    // In a real application, this would use an actual email service like Resend
-    // For development, we're logging the email content
     const emailContent = `
-      Hello ${name},
-      
-      Thank you for signing up for BioNews Digest. Please click the link below to verify your email address:
-      
-      ${verificationUrl}
-      
-      If you didn't request this, please ignore this email.
-      
-      Best regards,
-      The BioNews Digest Team
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify your BioNews Digest account</title>
+        <style>
+          body {
+            font-family: 'Inter', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2C3E50;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            background-color: #2C3E50;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+          }
+          .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+          }
+          .verify-button {
+            display: inline-block;
+            background-color: #1ABC9C;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            margin-top: 16px;
+            font-weight: 600;
+          }
+          .content {
+            padding: 20px;
+            background-color: #ffffff;
+          }
+          .footer {
+            padding: 20px;
+            background-color: #ECF0F1;
+            text-align: center;
+            font-size: 12px;
+            color: #7F8C8D;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">
+              <span>BioNews Digest</span>
+            </div>
+            <p>Your personalized biotech & pharma news digest</p>
+          </div>
+          
+          <div class="content">
+            <h2>Hello ${name},</h2>
+            
+            <p>Thank you for signing up for BioNews Digest. Please verify your email address to access your account and start receiving news updates.</p>
+            
+            <div style="margin-top: 32px; text-align: center;">
+              <a href="${verificationUrl}" class="verify-button">
+                Verify My Email
+              </a>
+            </div>
+            
+            <p style="margin-top: 32px;">If you didn't create an account with us, you can safely ignore this email.</p>
+          </div>
+          
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} BioNews Digest. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `;
-    
-    console.log("Email content:");
-    console.log(emailContent);
-    
-    // Simulate API call
-    return Promise.resolve();
+
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        await sgMail.send({
+          to: email,
+          from: 'news@bionewsdigest.com',
+          subject: 'Verify your BioNews Digest account',
+          html: emailContent,
+        });
+        console.log(`Verification email sent to ${email}`);
+      } catch (error) {
+        console.error('Error sending verification email:', error);
+        if (error.response) {
+          console.error(error.response.body);
+        }
+        throw new Error('Failed to send verification email');
+      }
+    } else {
+      console.log("Email content (verification):");
+      console.log(emailContent.substring(0, 500) + "...");
+    }
   }
   
   /**
@@ -70,7 +281,6 @@ class EmailService {
       </div>
     `).join('');
     
-    // In a real application, this would use an actual email service like Resend
     const emailContent = `
       <!DOCTYPE html>
       <html>
@@ -167,11 +377,26 @@ class EmailService {
       </html>
     `;
     
-    console.log("Email content HTML format (truncated):");
-    console.log(emailContent.substring(0, 500) + "...");
-    
-    // Simulate API call
-    return Promise.resolve();
+    if (process.env.SENDGRID_API_KEY) {
+      try {
+        await sgMail.send({
+          to: email,
+          from: 'news@bionewsdigest.com',
+          subject: 'Welcome to BioNews Digest',
+          html: emailContent,
+        });
+        console.log(`Welcome digest email sent to ${email}`);
+      } catch (error: any) {
+        console.error('Error sending welcome digest email:', error);
+        if (error.response) {
+          console.error(error.response.body);
+        }
+        throw new Error('Failed to send welcome digest email');
+      }
+    } else {
+      console.log("Email content (welcome digest):");
+      console.log(emailContent.substring(0, 500) + "...");
+    }
   }
   
   /**
