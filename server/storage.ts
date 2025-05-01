@@ -7,14 +7,17 @@ import {
 
 import { db } from "./db";
 import { eq, desc, and, asc, SQL, sql } from "drizzle-orm";
+import session from "express-session";
+import MemoryStore from "memorystore";
 
 // Interface for Storage operations
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { verificationToken: string }): Promise<User>;
+  createUser(user: InsertUser & { verificationToken?: string }): Promise<User>;
   updateUserVerification(id: number, isVerified: boolean): Promise<User | undefined>;
   getVerifiedUsers(): Promise<User[]>;
   
@@ -34,6 +37,9 @@ export interface IStorage {
   // Email digests operations
   createEmailDigest(digest: InsertEmailDigest): Promise<EmailDigest>;
   getEmailDigests(limit?: number): Promise<EmailDigest[]>;
+  
+  // Session store for authentication
+  sessionStore: any;
 }
 
 // Database-based implementation of the storage interface
@@ -49,6 +55,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(sql`LOWER(${users.email})`, email.toLowerCase()));
+    return user;
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(sql`LOWER(${users.username})`, username.toLowerCase()));
     return user;
   }
 

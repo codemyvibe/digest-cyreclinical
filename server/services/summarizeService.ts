@@ -1,5 +1,5 @@
 import { InsertNewsItem } from "@shared/schema";
-import { aiService } from "./aiService";
+import { anthropicService } from "./anthropicService";
 
 class SummarizeService {
   /**
@@ -14,8 +14,8 @@ class SummarizeService {
     // First, score and rank all items by importance
     const scoredItems = await Promise.all(
       newsItems.map(async item => {
-        // Use AI service to calculate importance
-        const importance = await aiService.calculateImportance(item);
+        // Use Anthropic service to calculate importance
+        const importance = await anthropicService.calculateImportance(item);
         return { ...item, importance };
       })
     );
@@ -29,8 +29,8 @@ class SummarizeService {
     // Generate better summaries for the top items
     const processedItems = await Promise.all(
       topItems.map(async item => {
-        // Use AI service to generate summary
-        const summary = await aiService.generateSummary(item);
+        // Use Anthropic service to generate summary
+        const summary = await anthropicService.generateSummary(item);
         return { ...item, summary };
       })
     );
