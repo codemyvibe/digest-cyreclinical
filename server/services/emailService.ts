@@ -107,35 +107,37 @@ class EmailService {
       </html>
     `;
 
+    // Create message object
+    const msg = {
+      to: email,
+      from: 'test@example.com', // Use your verified sender
+      subject: 'Sign in to BioNews Digest',
+      html: emailContent,
+    };
+
     // For development/testing purposes, we'll just log the email content
-    // and the magic link URL instead of actually sending the email
+    // and the magic link URL
     console.log("Email content (magic link):");
     console.log(`Magic link URL: ${magicLink}`);
-    console.log(emailContent.substring(0, 500) + "...");
     
-    // Skip actual sending for now due to SendGrid verified sender requirements
-    /*
+    // Check if SendGrid API key is set
     if (process.env.SENDGRID_API_KEY) {
       try {
-        await sgMail.send({
-          to: email,
-          from: 'news@bionewsdigest.com',
-          subject: 'Sign in to BioNews Digest',
-          html: emailContent,
-        });
+        await sgMail.send(msg);
         console.log(`Magic link email sent to ${email}`);
       } catch (error: any) {
         console.error('Error sending magic link email:', error);
         if (error.response) {
           console.error(error.response.body);
         }
-        throw new Error('Failed to send magic link email');
+        
+        // Log email content for debugging but don't throw - this allows login to continue
+        console.log(emailContent.substring(0, 500) + "...");
       }
     } else {
-      console.log("Email content (magic link):");
+      console.log("SENDGRID_API_KEY not set. Email content (magic link):");
       console.log(emailContent.substring(0, 500) + "...");
     }
-    */
   }
   /**
    * Send verification email to the user
@@ -233,35 +235,37 @@ class EmailService {
       </html>
     `;
 
+    // Create message object
+    const msg = {
+      to: email,
+      from: 'test@example.com', // Use your verified sender
+      subject: 'Verify your BioNews Digest account',
+      html: emailContent,
+    };
+
     // For development/testing purposes, we'll just log the email content
     // and the verification URL instead of actually sending the email
     console.log("Email content (verification):");
     console.log(`Verification URL: ${verificationUrl}`);
-    console.log(emailContent.substring(0, 500) + "...");
     
-    // Skip actual sending for now due to SendGrid verified sender requirements
-    /*
+    // Check if SendGrid API key is set
     if (process.env.SENDGRID_API_KEY) {
       try {
-        await sgMail.send({
-          to: email,
-          from: 'news@bionewsdigest.com',
-          subject: 'Verify your BioNews Digest account',
-          html: emailContent,
-        });
+        await sgMail.send(msg);
         console.log(`Verification email sent to ${email}`);
       } catch (error: any) {
         console.error('Error sending verification email:', error);
         if (error.response) {
           console.error(error.response.body);
         }
-        throw new Error('Failed to send verification email');
+        
+        // Log email content for debugging but don't throw - this allows registration to continue
+        console.log(emailContent.substring(0, 500) + "...");
       }
     } else {
-      console.log("Email content (verification):");
+      console.log("SENDGRID_API_KEY not set. Email content (verification):");
       console.log(emailContent.substring(0, 500) + "...");
     }
-    */
   }
   
   /**
@@ -395,35 +399,37 @@ class EmailService {
       </html>
     `;
     
+    // Create message object
+    const msg = {
+      to: email,
+      from: 'test@example.com', // Use your verified sender
+      subject: 'Welcome to BioNews Digest',
+      html: emailContent,
+    };
+
     // For development/testing purposes, we'll just log the email content
-    // and the verification URL instead of actually sending the email
+    // and the verification URL
     console.log("Email content (welcome digest):");
     console.log(`Verification URL: ${verificationUrl}`);
-    console.log(emailContent.substring(0, 500) + "...");
     
-    // Skip actual sending for now due to SendGrid verified sender requirements
-    /*
+    // Check if SendGrid API key is set
     if (process.env.SENDGRID_API_KEY) {
       try {
-        await sgMail.send({
-          to: email,
-          from: 'news@bionewsdigest.com',
-          subject: 'Welcome to BioNews Digest',
-          html: emailContent,
-        });
+        await sgMail.send(msg);
         console.log(`Welcome digest email sent to ${email}`);
       } catch (error: any) {
         console.error('Error sending welcome digest email:', error);
         if (error.response) {
           console.error(error.response.body);
         }
-        throw new Error('Failed to send welcome digest email');
+        
+        // Log email content for debugging but don't throw - this allows registration to continue
+        console.log(emailContent.substring(0, 500) + "...");
       }
     } else {
-      console.log("Email content (welcome digest):");
+      console.log("SENDGRID_API_KEY not set. Email content (welcome digest):");
       console.log(emailContent.substring(0, 500) + "...");
     }
-    */
   }
   
   /**
@@ -536,34 +542,35 @@ class EmailService {
       </html>
     `;
     
+    // Create message object
+    const msg = {
+      to: email,
+      from: 'test@example.com', // Use your verified sender
+      subject: `Your BioNews Digest for ${formatDate(new Date())}`,
+      html: emailContent,
+    };
+
     // For development/testing purposes, we'll just log the email content
-    // instead of actually sending the email
     console.log("Email content (news digest):");
-    console.log(emailContent.substring(0, 500) + "...");
     
-    // Skip actual sending for now due to SendGrid verified sender requirements
-    /*
+    // Check if SendGrid API key is set
     if (process.env.SENDGRID_API_KEY) {
       try {
-        await sgMail.send({
-          to: email,
-          from: 'news@bionewsdigest.com',
-          subject: `Your BioNews Digest for ${formatDate(new Date())}`,
-          html: emailContent,
-        });
+        await sgMail.send(msg);
         console.log(`News digest email sent to ${email}`);
       } catch (error: any) {
         console.error('Error sending news digest email:', error);
         if (error.response) {
           console.error(error.response.body);
         }
-        throw new Error('Failed to send news digest email');
+        
+        // Log email content for debugging but don't throw - this allows the digest process to continue
+        console.log(emailContent.substring(0, 500) + "...");
       }
     } else {
-      console.log("Email content (news digest):");
+      console.log("SENDGRID_API_KEY not set. Email content (news digest):");
       console.log(emailContent.substring(0, 500) + "...");
     }
-    */
   }
 }
 
