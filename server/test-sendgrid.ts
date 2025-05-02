@@ -1,36 +1,30 @@
-// Test file for SendGrid
+// using Twilio SendGrid's v3 Node.js Library
+// https://github.com/sendgrid/sendgrid-nodejs
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import sgMail from '@sendgrid/mail';
 
-// Make sure SENDGRID_API_KEY is set in the environment
-if (!process.env.SENDGRID_API_KEY) {
-  console.error('SENDGRID_API_KEY environment variable is not set');
-  process.exit(1);
-}
+// Compute __dirname equivalent in ES module
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Set your API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Load environment variables from project root .env
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// Test using your example
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
 const msg = {
-  to: 'test@example.com', // Replace with your email for testing
-  from: 'test@example.com', // Replace with your verified sender email in SendGrid
+  to: 'aabdulshakur@gmail.com', // Change to your recipient
+  from: 'digest@cyreclinical.com', // Use verified sender from env
   subject: 'Sending with SendGrid is Fun',
   text: 'and easy to do anywhere, even with Node.js',
   html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-};
-
-// Send the email
+}
 sgMail
   .send(msg)
   .then(() => {
-    console.log('Email sent successfully');
+    console.log('Email sent');
   })
-  .catch((error) => {
-    console.error('Error sending email:');
+  .catch((error: any) => {
     console.error(error);
-    
-    // Log the response body if it exists
-    if (error.response) {
-      console.error(error.response.body);
-    }
   });
